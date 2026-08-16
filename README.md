@@ -25,16 +25,18 @@ Abrir `http://localhost:3000`.
 - Acceso privado y sincronización en Supabase cuando se configura.
 - Interfaz responsive para computador y teléfono.
 - Aplicación web instalable en la pantalla de inicio del celular.
+- Copia local de consulta y catálogo disponible cuando el teléfono queda sin conexión.
 
 ## Activar acceso y sincronización
 
 1. Crear un proyecto en Supabase.
-2. Ejecutar `supabase/schema.sql` desde el editor SQL del proyecto.
+2. Ejecutar `supabase/schema.sql` desde el editor SQL del proyecto. En proyectos existentes, el script migra automáticamente la fila JSONB anterior a tablas relacionales.
 3. Copiar `.env.example` como `.env.local`.
 4. Completar `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 5. Reiniciar la aplicación y crear el acceso privado de La Ruka.
 
 Las políticas incluidas aíslan los datos por cuenta autenticada.
+La aplicación escribe únicamente las filas modificadas, evitando que una sesión pise cambios no relacionados hechos desde otro dispositivo.
 
 ## Activar el envío por correo
 
@@ -44,6 +46,7 @@ Las políticas incluidas aíslan los datos por cuenta autenticada.
 4. Reiniciar la aplicación.
 
 La dirección receptora se configura desde **Mi negocio**.
+El correo real debe permanecer en las variables de entorno de Vercel; `.env.example` contiene solo valores de muestra.
 
 ## Verificación
 

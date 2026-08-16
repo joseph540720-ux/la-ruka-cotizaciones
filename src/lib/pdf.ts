@@ -6,7 +6,7 @@ function safeFileName(value: string) {
 }
 
 async function resolveLogoDataUrl(source?: string) {
-  const logoSource = source || "/la-ruka-logo.png";
+  const logoSource = source && source !== "/la-ruka-logo.png" ? source : "/la-ruka-logo-pdf.jpg";
   if (logoSource.startsWith("data:")) return logoSource;
   if (typeof window === "undefined") return undefined;
   const response = await fetch(logoSource);

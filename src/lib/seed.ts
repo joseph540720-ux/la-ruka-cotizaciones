@@ -1,6 +1,4 @@
-import type { BusinessSettings, Customer, Product, Quote } from "./quote";
-
-export const DEFAULT_QUOTE_RECIPIENT = "joseph540720@gmail.com";
+import type { BusinessSettings, Customer, Product, Quote } from "./quote.ts";
 
 export const seedBusiness: BusinessSettings = {
   name: "La Ruka",
@@ -9,7 +7,7 @@ export const seedBusiness: BusinessSettings = {
   address: "San José de la Mariquina, Región de Los Ríos",
   phone: "+56 9 8765 4321",
   email: "contacto@laruka.cl",
-  defaultRecipient: DEFAULT_QUOTE_RECIPIENT,
+  defaultRecipient: "",
   logoDataUrl: "/la-ruka-logo.png",
 };
 
@@ -27,9 +25,9 @@ export const seedProducts: Product[] = [
 ];
 
 export const seedCustomers: Customer[] = [
-  { id: "c1", name: "Municipalidad de Mariquina", rut: "69.200.100-8", contact: "Carolina Soto", email: "compras@munimariquina.cl", phone: "+56 9 6123 4567", address: "Mariquina, Región de Los Ríos" },
-  { id: "c2", name: "Constructora Los Ríos", rut: "76.321.456-2", contact: "Marco Díaz", email: "administracion@constructoralosrios.cl", phone: "+56 9 7321 8821", address: "Valdivia, Región de Los Ríos" },
-  { id: "c3", name: "Escuela Valle Verde", rut: "65.104.332-1", contact: "Paula Reyes", email: "direccion@valleverde.cl", phone: "+56 9 5332 1008", address: "Lanco, Región de Los Ríos" },
+  { id: "c1", name: "Municipalidad de Mariquina", rut: "69.200.100-8", contact: "Carolina Soto", email: "compras@munimariquina.cl", phone: "+56 9 6123 4567", address: "Mariquina, Región de Los Ríos", compraPorMercadoPublico: true },
+  { id: "c2", name: "Constructora Los Ríos", rut: "76.321.456-2", contact: "Marco Díaz", email: "administracion@constructoralosrios.cl", phone: "+56 9 7321 8821", address: "Valdivia, Región de Los Ríos", compraPorMercadoPublico: false },
+  { id: "c3", name: "Escuela Valle Verde", rut: "65.104.332-1", contact: "Paula Reyes", email: "direccion@valleverde.cl", phone: "+56 9 5332 1008", address: "Lanco, Región de Los Ríos", compraPorMercadoPublico: true },
 ];
 
 export const seedQuotes: Quote[] = [];
