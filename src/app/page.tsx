@@ -1,0 +1,6 @@
+import { CoffeeBreakApp } from "@/components/coffee-break-app";
+import { AuthGate } from "@/components/auth-gate";
+
+export default function Home() {
+  return <AuthGate><CoffeeBreakApp /></AuthGate>;
+}
