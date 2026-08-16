@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { emailSubjectValue, escapeHtml, isQuoteRecipientAllowed, resolveQuoteRecipient } from "@/lib/email";
+import { DEFAULT_QUOTE_RECIPIENT, emailSubjectValue, escapeHtml, isQuoteRecipientAllowed, resolveQuoteRecipient } from "@/lib/email";
 
 type EmailRequest = { to?: string; quoteNumber?: string; customerName?: string; content?: string; filename?: string };
 
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   try { body = await request.json() as EmailRequest; }
   catch { return NextResponse.json({ error: "La solicitud de correo no tiene un formato válido." }, { status: 400 }); }
 
-  const configuredRecipient = process.env.QUOTE_RECIPIENT_EMAIL;
+  const configuredRecipient = process.env.QUOTE_RECIPIENT_EMAIL || DEFAULT_QUOTE_RECIPIENT;
   const recipient = resolveQuoteRecipient(body.to, configuredRecipient);
   const quoteNumber = emailSubjectValue(body.quoteNumber);
   if (!recipient || !body.content || !body.filename || !quoteNumber) return NextResponse.json({ error: "Faltan datos necesarios para enviar la cotización." }, { status: 400 });
@@ -33,8 +33,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No pudimos comprobar que el destinatario pertenezca a tus datos." }, { status: 503 });
   }
   const stored = {
-    business: { defaultRecipient: businessResult.data?.default_recipient },
-    customers: customersResult.data || [],
+    business: { defaultRecipient: businessResult.data?.default_recipient || DEFAULT_QUOTE_RECIPIENT },
+    customers: [...(customersResult.data || []), { email: configuredRecipient }],
   };
   if (!isQuoteRecipientAllowed(recipient, stored)) {
     return NextResponse.json({ error: "El destinatario no pertenece al negocio ni a uno de tus clientes." }, { status: 403 });

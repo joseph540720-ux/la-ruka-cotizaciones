@@ -25,6 +25,7 @@ test("restaura semillas si productos o clientes no son arreglos", () => {
   const { state, issues } = normalizeStoredAppState({ business: {}, products: {}, customers: null, quotes: [] });
   assert.equal(state.products.length > 0, true);
   assert.equal(state.customers.length > 0, true);
+  assert.equal(state.business.defaultRecipient, "joseph540720@gmail.com");
   assert.equal(issues.some((issue) => issue.includes("catálogo")), true);
   assert.equal(issues.some((issue) => issue.includes("clientes")), true);
 });

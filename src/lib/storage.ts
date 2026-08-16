@@ -51,7 +51,9 @@ function normalizeBusiness(value: unknown, issues: string[]) {
     ...seedBusiness,
     ...stored,
     logoDataUrl: typeof stored.logoDataUrl === "string" && stored.logoDataUrl ? stored.logoDataUrl : "/la-ruka-logo.png",
-    defaultRecipient: typeof stored.defaultRecipient === "string" ? stored.defaultRecipient : "",
+    defaultRecipient: typeof stored.defaultRecipient === "string" && stored.defaultRecipient.trim()
+      ? stored.defaultRecipient
+      : seedBusiness.defaultRecipient,
   };
 }
 

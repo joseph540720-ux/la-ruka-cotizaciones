@@ -1,4 +1,5 @@
 import type { BusinessSettings, Customer, Product, Quote } from "./quote.ts";
+import { DEFAULT_QUOTE_RECIPIENT } from "./email.ts";
 
 export const seedBusiness: BusinessSettings = {
   name: "La Ruka",
@@ -7,7 +8,7 @@ export const seedBusiness: BusinessSettings = {
   address: "San José de la Mariquina, Región de Los Ríos",
   phone: "+56 9 8765 4321",
   email: "contacto@laruka.cl",
-  defaultRecipient: "",
+  defaultRecipient: DEFAULT_QUOTE_RECIPIENT,
   logoDataUrl: "/la-ruka-logo.png",
 };
 

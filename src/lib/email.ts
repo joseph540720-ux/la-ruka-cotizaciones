@@ -3,6 +3,8 @@ type StoredEmailState = {
   customers?: unknown;
 };
 
+export const DEFAULT_QUOTE_RECIPIENT = "joseph540720@gmail.com";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }

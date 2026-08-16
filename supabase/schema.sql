@@ -18,10 +18,13 @@ create table if not exists public.negocios (
   address text not null default '',
   phone text not null default '',
   email text not null default '',
-  default_recipient text not null default '',
+  default_recipient text not null default 'joseph540720@gmail.com',
   logo_data_url text,
   updated_at timestamptz not null default now()
 );
+
+alter table public.negocios
+  alter column default_recipient set default 'joseph540720@gmail.com';
 
 create table if not exists public.productos (
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -107,7 +110,7 @@ create table if not exists public.facturas (
 insert into public.negocios (user_id, name, legal_name, rut, address, phone, email, default_recipient, logo_data_url, updated_at)
 select user_id, coalesce(nullif(business->>'name', ''), 'La Ruka'), coalesce(business->>'legalName', ''),
   coalesce(business->>'rut', ''), coalesce(business->>'address', ''), coalesce(business->>'phone', ''),
-  coalesce(business->>'email', ''), coalesce(business->>'defaultRecipient', ''), nullif(business->>'logoDataUrl', ''), updated_at
+  coalesce(business->>'email', ''), coalesce(nullif(business->>'defaultRecipient', ''), 'joseph540720@gmail.com'), nullif(business->>'logoDataUrl', ''), updated_at
 from public.coffee_break_state
 on conflict (user_id) do nothing;
 

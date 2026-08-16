@@ -86,7 +86,7 @@ export function cloudRowsToSnapshot(rows: CloudRows): AppSnapshot {
     address: businessRow.address,
     phone: businessRow.phone,
     email: businessRow.email,
-    defaultRecipient: businessRow.default_recipient,
+    defaultRecipient: businessRow.default_recipient.trim() || seedBusiness.defaultRecipient,
     logoDataUrl: optional(businessRow.logo_data_url),
   } : { ...seedBusiness };
   const products: Product[] = rows.products.map((row) => ({ id: row.id, name: row.name, category: row.category, unit: row.unit, price: Number(row.price), cost: row.cost == null ? undefined : Number(row.cost), active: row.active }));

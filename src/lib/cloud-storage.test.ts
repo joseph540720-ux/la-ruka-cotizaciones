@@ -42,4 +42,5 @@ test("reconstruye cotizaciones con ítems y factura desde tablas", () => {
   assert.equal(snapshot.quotes[0].items[0].quantity, 2);
   assert.equal(snapshot.quotes[0].invoicedAmount, 2380);
   assert.equal(snapshot.quotes[0].customer.compraPorMercadoPublico, true);
+  assert.equal(snapshot.business.defaultRecipient, "joseph540720@gmail.com");
 });
