@@ -160,6 +160,11 @@ export function formatCLP(value: number) {
   return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(value);
 }
 
+export function formatMargin(value: number | null) {
+  if (value == null || !Number.isFinite(value)) return "No calculado";
+  return `${new Intl.NumberFormat("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value)}%`;
+}
+
 export function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00`));
 }

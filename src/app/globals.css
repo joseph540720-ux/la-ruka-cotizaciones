@@ -88,6 +88,7 @@ tbody tr:hover{background:#fffcf9}
 .first-quote-empty p{margin:0 0 20px}
 .inline-form{background:#fff9f5;border:1px solid #f3d8c8;border-radius:13px;padding:18px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:20px}
 .inline-form label,.form-grid label,.doc-bottom label,.item-fields label{font-size:12px;font-weight:700;color:#6d655e}
+.field-help{display:block;max-width:190px;color:var(--muted);font-size:9px;font-weight:500;line-height:1.35;margin-top:3px}
 .inline-form input,.inline-form select,.form-grid input,.doc-bottom textarea,.item-fields input{display:block;width:100%;height:42px;border:1px solid #ddd5ce;border-radius:8px;margin-top:7px;padding:0 10px;background:white;color:var(--ink)}
 .customer-form{grid-template-columns:2fr 1fr 1fr 2fr auto}
 .product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -99,6 +100,8 @@ tbody tr:hover{background:#fffcf9}
 .product-card h3{font-size:15px;margin:15px 0 7px}
 .product-card>p{margin:0;font-weight:750}
 .product-card p small{color:var(--muted);font-weight:400}
+.product-cost{display:block;color:#547263;font-size:10px;line-height:1.35;margin-top:8px}
+.product-cost.missing{color:#987151}
 .product-actions{border-top:1px solid var(--line);margin-top:14px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;font-size:11px}
 .active-label{color:var(--green);font-weight:700}
 .inactive-label{color:#888}
@@ -190,6 +193,15 @@ tbody tr:hover{background:#fffcf9}
 .review-actions>p{font-size:12px;color:var(--muted);line-height:1.6}
 .profit-box{background:#f8f5f1;border-radius:10px;padding:14px;margin:18px 0;text-align:left;display:flex;flex-direction:column;gap:9px}
 .profit-box>small{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:800}
+.profit-box>span{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px}
+.profit-box .profit-margin{border-top:1px solid #ded7cf;color:var(--green);font-size:13px;padding-top:10px}
+.profit-box .profit-margin b{font-size:17px}
+.profit-box .profit-margin.incomplete{color:#8a654d}
+.profit-box .profit-margin.negative{color:#b34636}
+.profit-box>p{color:#8a654d;font-size:10px;line-height:1.45;margin:0}
+.margin-indicator{display:inline-flex;width:max-content;border-radius:13px;background:var(--green-soft);color:var(--green);font-size:11px;font-weight:800;padding:5px 8px;white-space:nowrap}
+.margin-indicator.incomplete{background:#f4eee8;color:#8a654d}
+.margin-indicator.negative{background:#fdeae7;color:#b34636}
 .full{width:100%;margin-top:9px}
 .centered{margin:18px auto 0}
 .success-card{max-width:570px;margin:70px auto;padding:50px;text-align:center}
@@ -442,7 +454,7 @@ tbody tr:hover{background:#fffcf9}
 .quote-mobile-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .quote-mobile-head strong{font-size:14px}
 .quote-mobile-customer{display:block;font-size:13px;margin-top:5px}
-.quote-mobile-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px solid var(--line);margin-top:13px;padding-top:12px}
+.quote-mobile-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;border-top:1px solid var(--line);margin-top:13px;padding-top:12px}
 .quote-mobile-meta>span{display:flex;flex-direction:column;gap:4px;font-size:12px}
 .quote-mobile-meta small{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
 .quote-mobile-statuses{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:13px}
@@ -528,6 +540,9 @@ tbody tr:hover{background:#fffcf9}
 .quote-content-card .detail-totals{margin-top:18px}
 .detail-side-card{padding:17px}
 .detail-side-card h3{font-size:14px;margin:0 0 12px}
+.detail-profitability{background:#f8f5f1;margin:0;padding:13px}
+.detail-profitability>small{font-size:8px;line-height:1.4}
+.detail-profitability .profit-margin b{font-size:16px}
 .customer-side-card small,.customer-side-card strong,.customer-side-card span{display:block}
 .customer-side-card small{color:var(--orange-dark);font-size:9px;font-weight:800;letter-spacing:1px;margin-bottom:8px}
 .customer-side-card strong{font-size:15px;line-height:1.35;margin-bottom:8px}
@@ -537,7 +552,7 @@ tbody tr:hover{background:#fffcf9}
 
 @media(max-width:980px){
 .quote-detail-workspace{grid-template-columns:1fr;grid-template-areas:"sidebar" "flow"}
-.quote-detail-sidebar{position:static;display:grid;grid-template-columns:1fr 1fr}
+.quote-detail-sidebar{position:static;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
 @media(max-width:760px){

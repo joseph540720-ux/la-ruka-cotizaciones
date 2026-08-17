@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { hoyLocal, lineSubtotal, needsWeeklyFollowUp, nextQuoteNumber, normalizeInvoiceInput, normalizeQuote, quoteTotals, type Quote, type QuoteItem } from "./quote.ts";
+import { formatMargin, hoyLocal, lineSubtotal, needsWeeklyFollowUp, nextQuoteNumber, normalizeInvoiceInput, normalizeQuote, quoteTotals, type Quote, type QuoteItem } from "./quote.ts";
 
 test("guarda la fecha de Chile aunque UTC ya esté en el día siguiente", () => {
   assert.equal(hoyLocal(new Date("2026-08-16T03:30:00.000Z")), "2026-08-15");
@@ -62,6 +62,12 @@ test("no inventa rentabilidad cuando falta un costo", () => {
   assert.equal(totals.hasMissingCosts, true);
   assert.equal(totals.profit, null);
   assert.equal(totals.margin, null);
+});
+
+test("formatea el margen para mostrarlo en cada cotización", () => {
+  assert.equal(formatMargin(50), "50,0%");
+  assert.equal(formatMargin(12.345), "12,3%");
+  assert.equal(formatMargin(null), "No calculado");
 });
 
 test("migra estados anteriores y sincroniza las facturadas como aceptadas", () => {
