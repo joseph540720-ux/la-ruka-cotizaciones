@@ -47,6 +47,7 @@ La aplicación escribe únicamente las filas modificadas, evitando que una sesi�
 
 La dirección receptora se configura desde **Mi negocio**.
 El correo real debe permanecer en las variables de entorno de Vercel; `.env.example` contiene solo valores de muestra.
+El dominio de prueba `resend.dev` únicamente permite enviar al correo propietario de la cuenta de Resend. Para enviar cotizaciones directamente a clientes, se debe verificar un dominio propio y usarlo en `RESEND_FROM_EMAIL`.
 
 ## Verificación
 

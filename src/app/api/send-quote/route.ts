@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DEFAULT_QUOTE_RECIPIENT, emailSubjectValue, escapeHtml, isQuoteRecipientAllowed, resolveQuoteRecipient } from "@/lib/email";
+import { resendErrorMessage } from "@/lib/resend";
 
 type EmailRequest = { to?: string; quoteNumber?: string; customerName?: string; content?: string; filename?: string };
 
@@ -59,6 +60,6 @@ export async function POST(request: Request) {
     }),
   });
   const result = await response.json().catch(() => ({})) as { id?: string; message?: string };
-  if (!response.ok) return NextResponse.json({ error: result.message || "El proveedor de correo rechazó el envío." }, { status: response.status });
+  if (!response.ok) return NextResponse.json({ error: resendErrorMessage(result.message) }, { status: response.status });
   return NextResponse.json({ id: result.id });
 }
