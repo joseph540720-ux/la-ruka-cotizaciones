@@ -70,7 +70,7 @@ create table if not exists public.cotizaciones (
   status text not null check (status in ('Pendiente', 'Aceptada', 'Rechazada')),
   status_updated_at date,
   last_follow_up_at date,
-  delivery_status text not null check (delivery_status in ('borrador', 'enviada_cliente', 'subida_mercado_publico')),
+  delivery_status text not null check (delivery_status in ('borrador', 'descargada', 'compartida', 'enviada_encargado', 'enviada_cliente', 'subida_mercado_publico')),
   delivery_updated_at timestamptz,
   id_adquisicion text,
   owner_copy_sent_at timestamptz,
@@ -79,6 +79,10 @@ create table if not exists public.cotizaciones (
   primary key (user_id, id),
   unique (user_id, number)
 );
+
+alter table public.cotizaciones drop constraint if exists cotizaciones_delivery_status_check;
+alter table public.cotizaciones add constraint cotizaciones_delivery_status_check
+  check (delivery_status in ('borrador', 'descargada', 'compartida', 'enviada_encargado', 'enviada_cliente', 'subida_mercado_publico'));
 
 create table if not exists public.cotizacion_items (
   user_id uuid not null,
@@ -145,7 +149,7 @@ select state.user_id, quote->>'id', quote->>'number', coalesce(nullif(quote->>'d
   coalesce((quote->'customer'->>'compraPorMercadoPublico')::boolean, false), coalesce(quote->>'notes', ''),
   case when quote->>'status' in ('Pendiente', 'Aceptada', 'Rechazada') then quote->>'status' else 'Pendiente' end,
   nullif(quote->>'statusUpdatedAt', '')::date, nullif(quote->>'lastFollowUpAt', '')::date,
-  case when quote->>'deliveryStatus' in ('borrador', 'enviada_cliente', 'subida_mercado_publico') then quote->>'deliveryStatus' else 'borrador' end,
+  case when quote->>'deliveryStatus' in ('borrador', 'descargada', 'compartida', 'enviada_encargado', 'enviada_cliente', 'subida_mercado_publico') then quote->>'deliveryStatus' else 'borrador' end,
   nullif(quote->>'deliveryUpdatedAt', '')::timestamptz, nullif(quote->>'idAdquisicion', ''),
   nullif(quote->>'ownerCopySentAt', '')::timestamptz, state.updated_at, state.updated_at
 from public.coffee_break_state state

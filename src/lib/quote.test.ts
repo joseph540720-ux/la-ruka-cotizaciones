@@ -92,6 +92,13 @@ test("mantiene separados el envío y la respuesta de la cotización", () => {
   assert.equal(normalized.idAdquisicion, "1234-5-LP26");
 });
 
+test("conserva el canal usado para terminar una cotización", () => {
+  const base = { id: "q", number: "COT-3", date: "2026-08-16", customer: { id: "c", name: "Cliente" }, items: [], notes: "", status: "Pendiente" };
+  for (const deliveryStatus of ["descargada", "compartida", "enviada_encargado"] as const) {
+    assert.equal(normalizeQuote({ ...base, deliveryStatus }).deliveryStatus, deliveryStatus);
+  }
+});
+
 test("activa el seguimiento semanal solo para pendientes vencidas", () => {
   const quote: Quote = { id: "q", number: "COT-1", date: "2026-08-01", status: "Pendiente", statusUpdatedAt: "2026-08-01", deliveryStatus: "enviada_cliente", deliveryUpdatedAt: "2026-08-01", customer: { id: "c", name: "Cliente", compraPorMercadoPublico: false }, items: [], notes: "" };
   assert.equal(needsWeeklyFollowUp(quote, new Date("2026-08-08T12:00:00")), true);

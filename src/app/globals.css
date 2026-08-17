@@ -387,6 +387,9 @@ tbody tr:hover{background:#fffcf9}
 .customer-channel{display:inline-flex;margin-top:6px;padding:4px 7px;border-radius:10px;background:#f5efe9;color:#745b4b;font-size:10px}
 .delivery-badge{display:inline-flex;align-items:center;padding:6px 9px;border-radius:18px;font-size:10px;font-weight:750;white-space:nowrap}
 .delivery-borrador{background:#eee;color:#68625d}
+.delivery-descargada{background:var(--orange-soft);color:var(--orange-dark)}
+.delivery-compartida{background:var(--blue-soft);color:var(--blue)}
+.delivery-enviada_encargado{background:#fff3d8;color:#8a5a00}
 .delivery-enviada_cliente{background:var(--blue-soft);color:var(--blue)}
 .delivery-subida_mercado_publico{background:var(--green-soft);color:var(--green)}
 .delivery-panel{border:1px solid var(--line);border-radius:13px;padding:18px;margin-bottom:22px;background:#fff}

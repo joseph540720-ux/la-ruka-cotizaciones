@@ -71,6 +71,9 @@ function Badge({ status }: { status: Quote["status"] }) {
 
 const deliveryLabels: Record<QuoteDeliveryStatus, string> = {
   borrador: "Borrador",
+  descargada: "PDF descargado",
+  compartida: "Compartida",
+  enviada_encargado: "Enviada al encargado",
   enviada_cliente: "Enviada al cliente",
   subida_mercado_publico: "Mercado Público",
 };
@@ -81,6 +84,16 @@ function DeliveryBadge({ status }: { status: QuoteDeliveryStatus }) {
 
 function deliveryDate(value?: string) {
   return value ? formatDate(value.slice(0, 10)) : "";
+}
+
+function deliveryDescription(quote: Quote) {
+  const date = deliveryDate(quote.deliveryUpdatedAt);
+  if (quote.deliveryStatus === "borrador") return "Aún no se registra una entrega.";
+  if (quote.deliveryStatus === "descargada") return `PDF descargado${date ? ` el ${date}` : ""}.`;
+  if (quote.deliveryStatus === "compartida") return `Cotización compartida${date ? ` el ${date}` : ""}.`;
+  if (quote.deliveryStatus === "enviada_encargado") return `Enviada al encargado${date ? ` el ${date}` : ""}.`;
+  if (quote.deliveryStatus === "enviada_cliente") return `Enviada al cliente${date ? ` el ${date}` : ""}.`;
+  return `Subida a Mercado Público${date ? ` el ${date}` : ""}.`;
 }
 
 async function sendQuoteEmail(quote: Quote, business: BusinessSettings, recipient: string) {
@@ -407,7 +420,7 @@ function Dashboard({ quotes, onNew, onQuotes, onUpdate }: { quotes: Quote[]; onN
   </>;
 }
 
-function QuoteEmailActions({ business, customer, busyTarget, onSend }: { business: BusinessSettings; customer: Customer; busyTarget: EmailTarget | null; onSend: (target: EmailTarget, recipient: string) => void }) {
+function QuoteEmailActions({ business, customer, busyTarget, disabled = false, onSend }: { business: BusinessSettings; customer: Customer; busyTarget: EmailTarget | null; disabled?: boolean; onSend: (target: EmailTarget, recipient: string) => void }) {
   const [ownerRecipient, setOwnerRecipient] = useState(business.defaultRecipient);
   const [customerRecipient, setCustomerRecipient] = useState(customer.email || "");
   const recommended: EmailTarget = customer.compraPorMercadoPublico ? "owner" : "customer";
@@ -415,12 +428,12 @@ function QuoteEmailActions({ business, customer, busyTarget, onSend }: { busines
     <div className={`email-option ${recommended === "owner" ? "recommended" : ""}`}>
       <div className="email-option-head"><div><strong>Mercado Público</strong><span>Recibe el PDF para subirlo tú.</span></div>{recommended === "owner" && <small>Recomendado</small>}</div>
       <label>Correo del encargado<input aria-label="Destinatario de mi correo" type="email" value={ownerRecipient} onChange={(event) => setOwnerRecipient(event.target.value)}/></label>
-      <button className="secondary full" type="button" disabled={Boolean(busyTarget) || !normalizeEmail(ownerRecipient)} onClick={() => onSend("owner", ownerRecipient)}><Icon name="mail"/> {busyTarget === "owner" ? "Enviando…" : "Enviar a mi correo"}</button>
+      <button className="secondary full" type="button" disabled={disabled || Boolean(busyTarget) || !normalizeEmail(ownerRecipient)} onClick={() => onSend("owner", ownerRecipient)}><Icon name="mail"/> {busyTarget === "owner" ? "Enviando…" : "Enviar a mi correo"}</button>
     </div>
     <div className={`email-option ${recommended === "customer" ? "recommended" : ""}`}>
       <div className="email-option-head"><div><strong>Envío directo</strong><span>Llega al contacto guardado.</span></div>{recommended === "customer" && <small>Recomendado</small>}</div>
       <label>Correo del cliente<input aria-label="Correo del cliente para envío" type="email" value={customerRecipient} onChange={(event) => setCustomerRecipient(event.target.value)}/></label>
-      <button className="primary full" type="button" disabled={Boolean(busyTarget) || !normalizeEmail(customerRecipient)} onClick={() => onSend("customer", customerRecipient)}><Icon name="mail"/> {busyTarget === "customer" ? "Enviando…" : "Enviar al cliente"}</button>
+      <button className="primary full" type="button" disabled={disabled || Boolean(busyTarget) || !normalizeEmail(customerRecipient)} onClick={() => onSend("customer", customerRecipient)}><Icon name="mail"/> {busyTarget === "customer" ? "Enviando…" : "Enviar al cliente"}</button>
     </div>
   </div>;
 }
@@ -442,7 +455,7 @@ function QuoteTable({ quotes }: { quotes: Quote[] }) {
 
 function Quotes({ business, quotes, selectedQuoteId, onNew, onBack, onDuplicate, onEdit, onUpdate, onSave, onPrepareRecipient, onDelete }: { business: BusinessSettings; quotes: Quote[]; selectedQuoteId: string | null; onNew: () => void; onBack: () => void; onDuplicate: (quote: Quote) => void; onEdit: (quote: Quote) => void; onUpdate: (quote: Quote) => void; onSave: (quote: Quote) => Promise<void>; onPrepareRecipient: (target: EmailTarget, email: string, customerId: string) => Promise<string>; onDelete: (quote: Quote) => void }) {
   const [search, setSearch] = useState(""); const [billing, setBilling] = useState(false); const [confirmDelete, setConfirmDelete] = useState(false);
-  const [detailBusyTarget, setDetailBusyTarget] = useState<EmailTarget | null>(null); const [detailMessage, setDetailMessage] = useState(""); const [detailError, setDetailError] = useState(""); const [deliverySaving, setDeliverySaving] = useState(false); const [invoiceSaving, setInvoiceSaving] = useState(false);
+  const [detailBusyTarget, setDetailBusyTarget] = useState<EmailTarget | null>(null); const [detailMessage, setDetailMessage] = useState(""); const [detailError, setDetailError] = useState(""); const [deliverySaving, setDeliverySaving] = useState(false); const [invoiceSaving, setInvoiceSaving] = useState(false); const [detailFileAction, setDetailFileAction] = useState<"download" | "share" | null>(null);
   const selected = selectedQuoteId ? quotes.find((quote) => quote.id === selectedQuoteId) || null : null;
   const filtered = quotes.filter((q) => `${q.number} ${q.customer.name}`.toLowerCase().includes(search.toLowerCase()));
   const sendFromDetail = async (target: EmailTarget, email: string) => {
@@ -456,7 +469,7 @@ function Quotes({ business, quotes, selectedQuoteId, onNew, onBack, onDuplicate,
       const sentAt = new Date().toISOString();
       const updated: Quote = target === "customer"
         ? { ...preparedQuote, deliveryStatus: "enviada_cliente", deliveryUpdatedAt: sentAt }
-        : { ...preparedQuote, ownerCopySentAt: sentAt };
+        : { ...preparedQuote, deliveryStatus: "enviada_encargado", deliveryUpdatedAt: sentAt, ownerCopySentAt: sentAt };
       await onSave(updated);
       setDetailMessage(target === "customer" ? "Cotización enviada al cliente y registrada." : "PDF enviado a tu correo. Confirma la subida cuando la completes en Mercado Público.");
     } catch (error) {
@@ -470,6 +483,22 @@ function Quotes({ business, quotes, selectedQuoteId, onNew, onBack, onDuplicate,
     try { await onSave(updated); setDetailMessage("Subida a Mercado Público registrada."); }
     catch (error) { setDetailError(error instanceof Error ? error.message : "No fue posible registrar la subida."); }
     finally { setDeliverySaving(false); }
+  };
+  const saveFileDelivery = async (action: "download" | "share") => {
+    if (!selected) return;
+    setDetailFileAction(action); setDetailError(""); setDetailMessage("");
+    const updated: Quote = { ...selected, deliveryStatus: action === "download" ? "descargada" : "compartida", deliveryUpdatedAt: new Date().toISOString() };
+    let statusSaved = false;
+    try {
+      await onSave(updated); statusSaved = true;
+      if (action === "download") await downloadQuotePdf(updated, business);
+      else await shareQuotePdf(updated, business);
+      setDetailMessage(action === "download" ? "PDF descargado y estado actualizado." : "Cotización compartida y estado actualizado.");
+    } catch (error) {
+      if (statusSaved) { try { await onSave(selected); } catch { /* El aviso global de sincronización mostrará el error. */ } }
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setDetailError(error instanceof Error ? error.message : "No fue posible completar la acción.");
+    } finally { setDetailFileAction(null); }
   };
   if (selected) {
     const totals = quoteTotals(selected.items);
@@ -532,13 +561,13 @@ function Quotes({ business, quotes, selectedQuoteId, onNew, onBack, onDuplicate,
             </div>
             <div className="quote-flow-body">
               <div className="delivery-state-row">
-                <span>{selected.deliveryStatus === "borrador" ? "Aún no se registra una entrega." : `Entrega registrada el ${deliveryDate(selected.deliveryUpdatedAt)}.`}</span>
+                <span>{deliveryDescription(selected)}</span>
                 {selected.idAdquisicion && <span>ID de adquisición: <strong>{selected.idAdquisicion}</strong></span>}
                 {selected.ownerCopySentAt && <span>Copia enviada a tu correo el {deliveryDate(selected.ownerCopySentAt)}.</span>}
               </div>
               <div className="delivery-file-actions">
-                <button className="secondary" onClick={() => downloadQuotePdf(selected, business)}><Icon name="download"/> Descargar PDF</button>
-                <button className="secondary" onClick={() => void shareQuotePdf(selected, business)}><Icon name="share"/> Compartir por WhatsApp</button>
+                <button className="secondary" disabled={Boolean(detailFileAction)} onClick={() => void saveFileDelivery("download")}><Icon name="download"/> {detailFileAction === "download" ? "Descargando…" : "Descargar PDF"}</button>
+                <button className="secondary" disabled={Boolean(detailFileAction)} onClick={() => void saveFileDelivery("share")}><Icon name="share"/> {detailFileAction === "share" ? "Compartiendo…" : "Compartir por WhatsApp"}</button>
               </div>
               <QuoteEmailActions key={selected.id} business={business} customer={selected.customer} busyTarget={detailBusyTarget} onSend={(target, recipient) => void sendFromDetail(target, recipient)}/>
               {(selected.customer.compraPorMercadoPublico || selected.deliveryStatus === "subida_mercado_publico") && <form className="marketplace-form flow-marketplace" action={saveMarketplaceDelivery}>
@@ -662,7 +691,7 @@ function Settings({ business, onChange }: { business: BusinessSettings; onChange
 
 function QuoteWizard({ business, products, customers, quotes, initialQuote, mode, onAddCustomer, onCancel, onSave, onPrepareRecipient, onDone }: { business: BusinessSettings; products: Product[]; customers: Customer[]; quotes: Quote[]; initialQuote: Quote | null; mode: QuoteWizardMode; onAddCustomer: (customer: Customer) => void; onCancel: () => void; onSave: (quote: Quote) => Promise<void>; onPrepareRecipient: (target: EmailTarget, email: string, customerId: string) => Promise<string>; onDone: (quote: Quote) => void }) {
   const [step, setStep] = useState(1); const [customerId, setCustomerId] = useState(initialQuote?.customer.id || ""); const [creatingCustomer, setCreatingCustomer] = useState(false); const [items, setItems] = useState<QuoteItem[]>(initialQuote?.items || []); const [search, setSearch] = useState(""); const [notes, setNotes] = useState(initialQuote?.notes || DEFAULT_QUOTE_NOTES); const [sentTarget, setSentTarget] = useState<EmailTarget | null>(null);
-  const [sending, setSending] = useState(false); const [sendingTarget, setSendingTarget] = useState<EmailTarget | null>(null); const [sendError, setSendError] = useState(""); const [sentWarning, setSentWarning] = useState("");
+  const [sending, setSending] = useState(false); const [sendingTarget, setSendingTarget] = useState<EmailTarget | null>(null); const [sendError, setSendError] = useState(""); const [sentWarning, setSentWarning] = useState(""); const [fileDeliveryAction, setFileDeliveryAction] = useState<"download" | "share" | null>(null); const [completedQuote, setCompletedQuote] = useState<Quote | null>(null);
   const [quoteId, setQuoteId] = useState(() => mode === "edit" && initialQuote ? initialQuote.id : crypto.randomUUID());
   const [quoteNumber, setQuoteNumber] = useState(() => mode === "edit" && initialQuote ? initialQuote.number : nextQuoteNumber(quotes));
   const [draftReady, setDraftReady] = useState(mode !== "create");
@@ -725,8 +754,24 @@ function QuoteWizard({ business, products, customers, quotes, initialQuote, mode
     catch (error) { setSendError(error instanceof Error ? error.message : "No fue posible guardar la cotización."); }
     finally { setSending(false); }
   };
-  const downloadPdf = async () => { const quote = buildQuote(); if (quote) await downloadQuotePdf(quote, business); };
-  const sharePdf = async () => { const quote = buildQuote(); if (quote) await shareQuotePdf(quote, business); };
+  const downloadPdfOnly = async () => { const quote = completedQuote || buildQuote(); if (quote) await downloadQuotePdf(quote, business); };
+  const completeWithFileDelivery = async (action: "download" | "share") => {
+    const quote = buildQuote(); if (!quote) return;
+    const updated: Quote = { ...quote, deliveryStatus: action === "download" ? "descargada" : "compartida", deliveryUpdatedAt: new Date().toISOString() };
+    setSending(true); setFileDeliveryAction(action); setSendError("");
+    let statusSaved = false;
+    try {
+      await onSave(updated); statusSaved = true;
+      if (mode === "create") clearNewQuoteDraft(localStorage);
+      if (action === "download") await downloadQuotePdf(updated, business);
+      else await shareQuotePdf(updated, business);
+      onDone(updated);
+    } catch (error) {
+      if (statusSaved) { try { await onSave(quote); } catch { /* El aviso global de sincronización mostrará el error. */ } }
+      if (error instanceof DOMException && error.name === "AbortError") { setSendError("No se compartió la cotización. Puedes volver a intentarlo."); return; }
+      setSendError(error instanceof Error ? error.message : "No fue posible completar la entrega.");
+    } finally { setSending(false); setFileDeliveryAction(null); }
+  };
   const sendQuote = async (target: EmailTarget, email: string) => {
     const draftQuote = buildQuote(); if (!draftQuote) return;
     setSending(true); setSendingTarget(target); setSendError("");
@@ -742,13 +787,13 @@ function QuoteWizard({ business, products, customers, quotes, initialQuote, mode
       const sentAt = new Date().toISOString();
       const sentQuote: Quote = target === "customer"
         ? { ...quote, deliveryStatus: "enviada_cliente", deliveryUpdatedAt: sentAt }
-        : { ...quote, ownerCopySentAt: sentAt };
+        : { ...quote, deliveryStatus: "enviada_encargado", deliveryUpdatedAt: sentAt, ownerCopySentAt: sentAt };
       try { await onSave(sentQuote); }
       catch (error) {
         console.error("[sync] El correo salió, pero no se pudo registrar el envío", error);
         setSentWarning("El correo fue enviado, pero no pudimos registrar la fecha de envío. La cotización sí quedó guardada.");
       }
-      setSentTarget(target);
+      setCompletedQuote(sentQuote); setSentTarget(target);
     } catch (error) {
       const message = error instanceof Error ? error.message : "No fue posible enviar el correo.";
       setSendError(persisted ? `La cotización quedó guardada, pero no se pudo enviar: ${message}` : `No se envió porque primero debemos guardar la cotización: ${message}`);
@@ -756,7 +801,7 @@ function QuoteWizard({ business, products, customers, quotes, initialQuote, mode
     finally { setSending(false); setSendingTarget(null); }
   };
   if (mode !== "create" && !initialQuote) return <section className="panel narrow"><button className="back-link" onClick={onCancel}>← Volver</button><div className="empty"><strong>No encontramos la cotización que quieres {mode === "edit" ? "editar" : "duplicar"}.</strong><p>Puede haber sido eliminada o el enlace ya no es válido.</p></div></section>;
-  if (sentTarget) return <section className="success-card"><span className="success-icon"><Icon name="check" size={42}/></span><h2>{sentTarget === "customer" ? "¡Cotización enviada al cliente!" : "¡Cotización enviada a tu correo!"}</h2><p>{sentTarget === "customer" ? <>La cotización de <strong>{business.name}</strong> para <strong>{customer?.name}</strong> ya está registrada como enviada y pendiente de respuesta.</> : <>El PDF ya está en tu correo. La cotización seguirá como borrador hasta que confirmes su subida a Mercado Público desde el detalle.</>}</p>{sentWarning && <div className="send-error">{sentWarning}</div>}<div className="success-actions"><button className="secondary" onClick={downloadPdf}><Icon name="download"/> Descargar PDF</button><button className="primary" onClick={() => { const quote = buildQuote(); if (quote) onDone(quote); }}>Terminar</button></div><small>El PDF incluye automáticamente el logo cargado en Mi negocio.</small></section>;
+  if (sentTarget) return <section className="success-card"><span className="success-icon"><Icon name="check" size={42}/></span><h2>{sentTarget === "customer" ? "¡Cotización enviada al cliente!" : "¡Cotización enviada a tu correo!"}</h2><p>{sentTarget === "customer" ? <>La cotización de <strong>{business.name}</strong> para <strong>{customer?.name}</strong> ya está registrada como enviada y pendiente de respuesta.</> : <>El PDF ya está en tu correo y quedó registrado como enviado al encargado. Después puedes confirmar su subida a Mercado Público desde el detalle.</>}</p>{sentWarning && <div className="send-error">{sentWarning}</div>}<div className="success-actions"><button className="secondary" onClick={downloadPdfOnly}><Icon name="download"/> Descargar PDF</button><button className="primary" onClick={() => { const quote = completedQuote || buildQuote(); if (quote) onDone(quote); }}>Terminar</button></div><small>El PDF incluye automáticamente el logo cargado en Mi negocio.</small></section>;
   return <section className="wizard">
     {draftRestored && <div className="sync-notice sync-notice-success" role="status"><div><strong>Borrador recuperado</strong><span>Restauramos la cotización que estabas preparando antes de cerrar la app.</span></div><button className="secondary" type="button" onClick={discardDraft}>Descartar borrador</button></div>}
     <div className="wizard-head"><button className="back-link" onClick={onCancel}>← Salir</button><div className="steps">{["Cliente", "Productos", "Revisar"].map((label, index) => <div className={`step ${step >= index + 1 ? "done" : ""}`} key={label}><span>{step > index + 1 ? <Icon name="check" size={15}/> : index + 1}</span><b>{label}</b></div>)}</div></div>
@@ -776,7 +821,7 @@ function QuoteWizard({ business, products, customers, quotes, initialQuote, mode
     </div>}
     {step === 3 && customer && <div className="review-layout">
       <div className="document-preview"><div className="doc-head"><div className="brand">{business.logoDataUrl ? <Image className="quote-logo" src={business.logoDataUrl} alt={`Logo de ${business.name}`} width={62} height={52} unoptimized/> : <span className="brand-mark"><Icon name="coffee"/></span>}<span><strong>{business.name}</strong><small>Comida rápida y coffee break</small></span></div><div><span>COTIZACIÓN</span><strong>{quoteNumber}</strong><small>{formatDate(mode === "edit" && initialQuote ? initialQuote.date : hoyLocal())}</small></div></div><div className="doc-parties"><div><small>DE</small><strong>{business.name}</strong><span>{business.rut}</span><span>{business.address}</span></div><div><small>PARA</small><strong>{customer.name}</strong><span>{customer.rut}</span><span>{customer.contact}</span></div></div><table className="doc-table"><thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>{items.map((item) => <tr key={item.productId}><td>{item.name}<small>por {item.unit}</small></td><td>{item.quantity}</td><td>{formatCLP(item.unitPrice)}</td><td>{formatCLP(lineSubtotal(item))}</td></tr>)}</tbody></table><div className="doc-bottom"><label>Observaciones<textarea value={notes} onChange={(e) => setNotes(e.target.value)}/></label><div className="doc-totals"><span>Neto <b>{formatCLP(totals.net)}</b></span><span>IVA 19% <b>{formatCLP(totals.tax)}</b></span><span className="grand">Total <b>{formatCLP(totals.total)}</b></span></div></div></div>
-      <aside className="review-actions"><span className="review-check"><Icon name="check" size={25}/></span><h3>{mode === "edit" ? "Revisa y guarda los cambios" : "Elige cómo entregarla"}</h3><p>{customer.compraPorMercadoPublico ? "Este cliente compra por Mercado Público." : "Este cliente usa envío directo."} Puedes revisar el correo antes de cada envío.</p><div className="profit-box"><small>Información interna</small><span>Venta neta <b>{formatCLP(totals.net)}</b></span><span>Costo estimado <b>{formatCLP(totals.cost)}</b></span><span>Utilidad estimada <b>{totals.profit == null ? "Incompleta" : formatCLP(totals.profit)}</b></span></div>{sendError && <div className="send-error">{sendError}</div>}<QuoteEmailActions key={customer.id} business={business} customer={customer} busyTarget={sendingTarget} onSend={(target, recipient) => void sendQuote(target, recipient)}/><button className="secondary full" onClick={downloadPdf}><Icon name="download"/> Descargar PDF</button><button className="secondary full" onClick={sharePdf}><Icon name="share"/> Compartir por WhatsApp</button><button className="secondary full" disabled={sending} onClick={() => void finish()}><Icon name="check"/> {sending ? "Guardando..." : mode === "edit" ? "Guardar cambios" : "Guardar sin enviar"}</button><button className="back-link centered" onClick={() => setStep(2)}>← Volver y corregir</button></aside>
+      <aside className="review-actions"><span className="review-check"><Icon name="check" size={25}/></span><h3>{mode === "edit" ? "Revisa y guarda los cambios" : "Elige cómo entregarla"}</h3><p>{customer.compraPorMercadoPublico ? "Este cliente compra por Mercado Público." : "Este cliente usa envío directo."} Puedes revisar el correo antes de cada envío.</p><div className="profit-box"><small>Información interna</small><span>Venta neta <b>{formatCLP(totals.net)}</b></span><span>Costo estimado <b>{formatCLP(totals.cost)}</b></span><span>Utilidad estimada <b>{totals.profit == null ? "Incompleta" : formatCLP(totals.profit)}</b></span></div>{sendError && <div className="send-error">{sendError}</div>}<QuoteEmailActions key={customer.id} business={business} customer={customer} busyTarget={sendingTarget} disabled={sending} onSend={(target, recipient) => void sendQuote(target, recipient)}/><button className="secondary full" disabled={sending} onClick={() => void completeWithFileDelivery("download")}><Icon name="download"/> {fileDeliveryAction === "download" ? "Descargando…" : "Descargar y terminar"}</button><button className="secondary full" disabled={sending} onClick={() => void completeWithFileDelivery("share")}><Icon name="share"/> {fileDeliveryAction === "share" ? "Compartiendo…" : "Compartir y terminar"}</button><button className="secondary full" disabled={sending} onClick={() => void finish()}><Icon name="check"/> {sending && !fileDeliveryAction ? "Guardando..." : mode === "edit" ? "Guardar cambios" : "Guardar como borrador"}</button><button className="back-link centered" onClick={() => setStep(2)}>← Volver y corregir</button></aside>
     </div>}
   </section>;
 }

@@ -2,7 +2,7 @@ export type Product = { id: string; name: string; category: string; unit: string
 export type Customer = { id: string; name: string; rut?: string; contact?: string; email?: string; phone?: string; address?: string; compraPorMercadoPublico: boolean };
 export type QuoteItem = { productId: string; name: string; unit: string; quantity: number; unitPrice: number; unitCost?: number };
 export type QuoteStatus = "Pendiente" | "Aceptada" | "Rechazada";
-export type QuoteDeliveryStatus = "borrador" | "enviada_cliente" | "subida_mercado_publico";
+export type QuoteDeliveryStatus = "borrador" | "descargada" | "compartida" | "enviada_encargado" | "enviada_cliente" | "subida_mercado_publico";
 export type Quote = { id: string; number: string; date: string; customer: Customer; items: QuoteItem[]; notes: string; status: QuoteStatus; statusUpdatedAt?: string; lastFollowUpAt?: string; deliveryStatus: QuoteDeliveryStatus; deliveryUpdatedAt?: string; idAdquisicion?: string; ownerCopySentAt?: string; invoicedAmount?: number; invoicedAt?: string; invoiceNumber?: string };
 export type BusinessSettings = { name: string; legalName: string; rut: string; address: string; phone: string; email: string; defaultRecipient: string; logoDataUrl?: string };
 
@@ -94,7 +94,7 @@ export function tryNormalizeQuote(quote: unknown): Quote | null {
       ? quote.status
       : quote.status === "Anulada" ? "Rechazada" : "Pendiente";
   const date = typeof quote.date === "string" && quote.date ? quote.date : "1970-01-01";
-  const deliveryStatus: QuoteDeliveryStatus = quote.deliveryStatus === "enviada_cliente" || quote.deliveryStatus === "subida_mercado_publico" || quote.deliveryStatus === "borrador"
+  const deliveryStatus: QuoteDeliveryStatus = quote.deliveryStatus === "descargada" || quote.deliveryStatus === "compartida" || quote.deliveryStatus === "enviada_encargado" || quote.deliveryStatus === "enviada_cliente" || quote.deliveryStatus === "subida_mercado_publico" || quote.deliveryStatus === "borrador"
     ? quote.deliveryStatus
     : quote.status === "Enviada" || Boolean(optionalString(quote.sentAt))
       ? "enviada_cliente"

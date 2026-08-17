@@ -35,12 +35,13 @@ test("reconstruye cotizaciones con ítems y factura desde tablas", () => {
     business: [{ user_id: "u1", name: "La Ruka", legal_name: "", rut: "", address: "Mariquina", phone: "", email: "", default_recipient: "", logo_data_url: null }],
     products: [],
     customers: [],
-    quotes: [{ user_id: "u1", id: "q1", number: "COT-2026-0001", quote_date: "2026-08-16", customer_id: "c1", customer_name: "Municipalidad", customer_rut: null, customer_contact: null, customer_email: null, customer_phone: null, customer_address: null, customer_compra_por_mercado_publico: true, notes: "", status: "Aceptada", status_updated_at: "2026-08-16", last_follow_up_at: null, delivery_status: "enviada_cliente", delivery_updated_at: null, id_adquisicion: null, owner_copy_sent_at: null }],
+    quotes: [{ user_id: "u1", id: "q1", number: "COT-2026-0001", quote_date: "2026-08-16", customer_id: "c1", customer_name: "Municipalidad", customer_rut: null, customer_contact: null, customer_email: null, customer_phone: null, customer_address: null, customer_compra_por_mercado_publico: true, notes: "", status: "Aceptada", status_updated_at: "2026-08-16", last_follow_up_at: null, delivery_status: "enviada_encargado", delivery_updated_at: null, id_adquisicion: null, owner_copy_sent_at: null }],
     items: [{ user_id: "u1", quote_id: "q1", position: 0, product_id: "p1", name: "Café", unit: "vaso", quantity: 2, unit_price: 1000, unit_cost: 400 }],
     invoices: [{ user_id: "u1", quote_id: "q1", invoice_number: "F-1", invoiced_at: "2026-08-16", amount: 2380 }],
   });
   assert.equal(snapshot.quotes[0].items[0].quantity, 2);
   assert.equal(snapshot.quotes[0].invoicedAmount, 2380);
+  assert.equal(snapshot.quotes[0].deliveryStatus, "enviada_encargado");
   assert.equal(snapshot.quotes[0].customer.compraPorMercadoPublico, true);
   assert.equal(snapshot.business.defaultRecipient, "joseph540720@gmail.com");
 });
