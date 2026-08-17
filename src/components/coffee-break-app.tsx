@@ -8,7 +8,7 @@ import { seedBusiness, seedCustomers, seedProducts, seedQuotes } from "@/lib/see
 import { formatCLP, formatDate, hoyLocal, lineSubtotal, needsWeeklyFollowUp, nextQuoteNumber, quoteTotals, type BusinessSettings, type Customer, type Product, type Quote, type QuoteDeliveryStatus, type QuoteItem, type QuoteStatus } from "@/lib/quote";
 import { downloadQuotePdf, quotePdfAttachment, shareQuotePdf } from "@/lib/pdf";
 import { getSupabase, isCloudConfigured } from "@/lib/supabase";
-import { loadLocalAppState, saveLocalAppState, type AppSnapshot } from "@/lib/storage";
+import { clearNewQuoteDraft, loadLocalAppState, loadNewQuoteDraft, saveLocalAppState, saveNewQuoteDraft, type AppSnapshot } from "@/lib/storage";
 import { loadCloudAppState, persistCloudChanges } from "@/lib/cloud-storage";
 import { normalizeEmail } from "@/lib/email";
 import { esRutValido, formatearRut, normalizarRutOpcional } from "@/lib/rut";
@@ -107,6 +107,7 @@ function Search({ value, onChange, placeholder }: { value: string; onChange: (va
 }
 
 const INVALID_RUT_MESSAGE = "Ingresa un RUT chileno válido o deja el campo vacío.";
+const DEFAULT_QUOTE_NOTES = "Valores netos. Cotización válida por 10 días.";
 
 function validateRutInput(input: HTMLInputElement, report = false) {
   const value = input.value.trim();
@@ -289,10 +290,13 @@ export function CoffeeBreakApp() {
   const saveQuote = async (quote: Quote) => {
     const current = latestStateRef.current;
     const nextQuotes = [quote, ...current.quotes.filter((stored) => stored.id !== quote.id)];
-    const nextSnapshot = { ...current, quotes: nextQuotes };
+    const nextCustomers = current.customers.some((customer) => customer.id === quote.customer.id)
+      ? current.customers
+      : [...current.customers, quote.customer];
+    const nextSnapshot = { ...current, customers: nextCustomers, quotes: nextQuotes };
     await persistSnapshot(nextSnapshot, `cotización ${quote.number}`);
     latestStateRef.current = nextSnapshot;
-    setQuotes(nextQuotes);
+    setCustomers(nextCustomers); setQuotes(nextQuotes);
   };
   const prepareEmailRecipient = async (target: EmailTarget, email: string, customerId: string) => {
     const normalized = normalizeEmail(email);
@@ -544,17 +548,46 @@ function Settings({ business, onChange }: { business: BusinessSettings; onChange
 }
 
 function QuoteWizard({ business, products, customers, quotes, initialQuote, mode, onAddCustomer, onCancel, onSave, onPrepareRecipient, onDone }: { business: BusinessSettings; products: Product[]; customers: Customer[]; quotes: Quote[]; initialQuote: Quote | null; mode: QuoteWizardMode; onAddCustomer: (customer: Customer) => void; onCancel: () => void; onSave: (quote: Quote) => Promise<void>; onPrepareRecipient: (target: EmailTarget, email: string, customerId: string) => Promise<string>; onDone: (quote: Quote) => void }) {
-  const [step, setStep] = useState(1); const [customerId, setCustomerId] = useState(initialQuote?.customer.id || ""); const [creatingCustomer, setCreatingCustomer] = useState(false); const [items, setItems] = useState<QuoteItem[]>(initialQuote?.items || []); const [search, setSearch] = useState(""); const [notes, setNotes] = useState(initialQuote?.notes || "Valores netos. Cotización válida por 10 días."); const [sentTarget, setSentTarget] = useState<EmailTarget | null>(null);
+  const [step, setStep] = useState(1); const [customerId, setCustomerId] = useState(initialQuote?.customer.id || ""); const [creatingCustomer, setCreatingCustomer] = useState(false); const [items, setItems] = useState<QuoteItem[]>(initialQuote?.items || []); const [search, setSearch] = useState(""); const [notes, setNotes] = useState(initialQuote?.notes || DEFAULT_QUOTE_NOTES); const [sentTarget, setSentTarget] = useState<EmailTarget | null>(null);
   const [sending, setSending] = useState(false); const [sendingTarget, setSendingTarget] = useState<EmailTarget | null>(null); const [sendError, setSendError] = useState(""); const [sentWarning, setSentWarning] = useState("");
-  const [quoteId] = useState(() => mode === "edit" && initialQuote ? initialQuote.id : crypto.randomUUID());
-  const [quoteNumber] = useState(() => mode === "edit" && initialQuote ? initialQuote.number : nextQuoteNumber(quotes));
-  const customer = customers.find((candidate) => candidate.id === customerId) || (initialQuote?.customer.id === customerId ? initialQuote.customer : undefined); const totals = quoteTotals(items);
-  const availableCustomers = initialQuote && !customers.some((candidate) => candidate.id === initialQuote.customer.id) ? [initialQuote.customer, ...customers] : customers;
+  const [quoteId, setQuoteId] = useState(() => mode === "edit" && initialQuote ? initialQuote.id : crypto.randomUUID());
+  const [quoteNumber, setQuoteNumber] = useState(() => mode === "edit" && initialQuote ? initialQuote.number : nextQuoteNumber(quotes));
+  const [draftReady, setDraftReady] = useState(mode !== "create");
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [draftCustomer, setDraftCustomer] = useState<Customer | undefined>();
+  const draftLoadedRef = useRef(false);
+  const customer = customers.find((candidate) => candidate.id === customerId)
+    || (draftCustomer?.id === customerId ? draftCustomer : undefined)
+    || (initialQuote?.customer.id === customerId ? initialQuote.customer : undefined); const totals = quoteTotals(items);
+  const customersWithInitial = initialQuote && !customers.some((candidate) => candidate.id === initialQuote.customer.id) ? [initialQuote.customer, ...customers] : customers;
+  const availableCustomers = draftCustomer && !customersWithInitial.some((candidate) => candidate.id === draftCustomer.id) ? [draftCustomer, ...customersWithInitial] : customersWithInitial;
   const visibleProducts = products.filter((p) => p.active && `${p.name} ${p.category}`.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => {
+    if (mode !== "create" || draftLoadedRef.current) return;
+    draftLoadedRef.current = true;
+    const frame = requestAnimationFrame(() => {
+      const draft = loadNewQuoteDraft(localStorage);
+      if (draft) {
+        setStep(draft.step); setCustomerId(draft.customerId); setDraftCustomer(draft.customer); setItems(draft.items); setNotes(draft.notes || DEFAULT_QUOTE_NOTES); setQuoteId(draft.quoteId); setQuoteNumber(draft.quoteNumber); setDraftRestored(true);
+      }
+      setDraftReady(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [mode]);
+  useEffect(() => {
+    if (mode !== "create" || !draftReady) return;
+    const hasProgress = Boolean(customerId || items.length || step > 1 || notes !== DEFAULT_QUOTE_NOTES);
+    if (!hasProgress) { clearNewQuoteDraft(localStorage); return; }
+    saveNewQuoteDraft(localStorage, { quoteId, quoteNumber, customerId, customer, items, notes, step: step === 2 || step === 3 ? step : 1 });
+  }, [customer, customerId, draftReady, items, mode, notes, quoteId, quoteNumber, step]);
   const addItem = (product: Product) => setItems((current) => { const found = current.find((item) => item.productId === product.id); return found ? current.map((item) => item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item) : [...current, { productId: product.id, name: product.name, unit: product.unit, quantity: 1, unitPrice: product.price, unitCost: product.cost }]; });
   const updateItem = (id: string, field: "quantity" | "unitPrice", value: number) => setItems((current) => current.map((item) => item.productId === id ? { ...item, [field]: field === "quantity" ? Math.max(1, Math.trunc(value || 1)) : Math.max(0, Math.trunc(value || 0)) } : item));
   const createCustomer = (newCustomer: Customer) => {
-    onAddCustomer(newCustomer); setCustomerId(newCustomer.id); setCreatingCustomer(false);
+    onAddCustomer(newCustomer); setDraftCustomer(newCustomer); setCustomerId(newCustomer.id); setCreatingCustomer(false);
+  };
+  const discardDraft = () => {
+    if (!window.confirm("¿Descartar esta cotización en curso? Los datos que todavía no guardaste se perderán.")) return;
+    clearNewQuoteDraft(localStorage); setStep(1); setCustomerId(""); setDraftCustomer(undefined); setItems([]); setNotes(DEFAULT_QUOTE_NOTES); setQuoteId(crypto.randomUUID()); setQuoteNumber(nextQuoteNumber(quotes)); setDraftRestored(false);
   };
   const buildQuote = (customerOverride?: Customer): Quote | null => {
     const today = hoyLocal(); const selectedCustomer = customerOverride || customer;
@@ -565,7 +598,7 @@ function QuoteWizard({ business, products, customers, quotes, initialQuote, mode
   const finish = async () => {
     const quote = buildQuote(); if (!quote) return;
     setSending(true); setSendError("");
-    try { await onSave(quote); onDone(quote); }
+    try { await onSave(quote); if (mode === "create") clearNewQuoteDraft(localStorage); onDone(quote); }
     catch (error) { setSendError(error instanceof Error ? error.message : "No fue posible guardar la cotización."); }
     finally { setSending(false); }
   };
@@ -580,6 +613,7 @@ function QuoteWizard({ business, products, customers, quotes, initialQuote, mode
       const quote = target === "customer" ? buildQuote({ ...draftQuote.customer, email: recipient }) : draftQuote;
       if (!quote) return;
       await onSave(quote);
+      if (mode === "create") clearNewQuoteDraft(localStorage);
       persisted = true;
       await sendQuoteEmail(quote, business, recipient);
       const sentAt = new Date().toISOString();
@@ -601,6 +635,7 @@ function QuoteWizard({ business, products, customers, quotes, initialQuote, mode
   if (mode !== "create" && !initialQuote) return <section className="panel narrow"><button className="back-link" onClick={onCancel}>← Volver</button><div className="empty"><strong>No encontramos la cotización que quieres {mode === "edit" ? "editar" : "duplicar"}.</strong><p>Puede haber sido eliminada o el enlace ya no es válido.</p></div></section>;
   if (sentTarget) return <section className="success-card"><span className="success-icon"><Icon name="check" size={42}/></span><h2>{sentTarget === "customer" ? "¡Cotización enviada al cliente!" : "¡Cotización enviada a tu correo!"}</h2><p>{sentTarget === "customer" ? <>La cotización de <strong>{business.name}</strong> para <strong>{customer?.name}</strong> ya está registrada como enviada y pendiente de respuesta.</> : <>El PDF ya está en tu correo. La cotización seguirá como borrador hasta que confirmes su subida a Mercado Público desde el detalle.</>}</p>{sentWarning && <div className="send-error">{sentWarning}</div>}<div className="success-actions"><button className="secondary" onClick={downloadPdf}><Icon name="download"/> Descargar PDF</button><button className="primary" onClick={() => { const quote = buildQuote(); if (quote) onDone(quote); }}>Terminar</button></div><small>El PDF incluye automáticamente el logo cargado en Mi negocio.</small></section>;
   return <section className="wizard">
+    {draftRestored && <div className="sync-notice sync-notice-success" role="status"><div><strong>Borrador recuperado</strong><span>Restauramos la cotización que estabas preparando antes de cerrar la app.</span></div><button className="secondary" type="button" onClick={discardDraft}>Descartar borrador</button></div>}
     <div className="wizard-head"><button className="back-link" onClick={onCancel}>← Salir</button><div className="steps">{["Cliente", "Productos", "Revisar"].map((label, index) => <div className={`step ${step >= index + 1 ? "done" : ""}`} key={label}><span>{step > index + 1 ? <Icon name="check" size={15}/> : index + 1}</span><b>{label}</b></div>)}</div></div>
     {step === 1 && <div className="wizard-card"><div className="wizard-title quote-customer-title"><span className="number">1</span><div><h2>¿Para quién es la cotización?</h2><p>Selecciona un cliente o créalo aquí mismo.</p></div><button className="secondary new-customer-button" onClick={() => setCreatingCustomer(!creatingCustomer)}><Icon name="plus"/> {creatingCustomer ? "Cerrar formulario" : "Crear cliente nuevo"}</button></div>
       {creatingCustomer && <CustomerForm onSave={createCustomer} onCancel={() => setCreatingCustomer(false)} submitLabel="Guardar y seleccionar" autoFocusName/>}

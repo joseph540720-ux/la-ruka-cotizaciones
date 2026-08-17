@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeStoredAppState } from "./storage.ts";
+import { clearNewQuoteDraft, loadNewQuoteDraft, normalizeStoredAppState, saveNewQuoteDraft } from "./storage.ts";
 
 test("repara cotizaciones sin items y descarta las que no tienen cliente o número", () => {
   const validCustomer = { id: "c", name: "Cliente" };
@@ -42,4 +42,32 @@ test("migra el canal preferido de clientes antiguos", () => {
   });
   assert.equal(state.customers[0].compraPorMercadoPublico, true);
   assert.equal(state.customers[1].compraPorMercadoPublico, false);
+});
+
+test("conserva y recupera una cotización que todavía está en edición", () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) || null,
+    setItem: (key: string, value: string) => { values.set(key, value); },
+    removeItem: (key: string) => { values.delete(key); },
+  };
+  const draft = {
+    quoteId: "q-borrador",
+    quoteNumber: "COT-2026-0002",
+    customerId: "c1",
+    customer: { id: "c1", name: "Municipalidad", compraPorMercadoPublico: true },
+    items: [{ productId: "p1", name: "Café", unit: "persona", quantity: 25, unitPrice: 1800, unitCost: 620 }],
+    notes: "Entregar a las 09:00",
+    step: 3 as const,
+  };
+
+  saveNewQuoteDraft(storage, draft);
+  const recovered = loadNewQuoteDraft(storage);
+  assert.equal(recovered?.quoteId, draft.quoteId);
+  assert.equal(recovered?.customer?.name, "Municipalidad");
+  assert.deepEqual(recovered?.items, draft.items);
+  assert.equal(recovered?.notes, draft.notes);
+  assert.equal(recovered?.step, 3);
+  clearNewQuoteDraft(storage);
+  assert.equal(loadNewQuoteDraft(storage), null);
 });
