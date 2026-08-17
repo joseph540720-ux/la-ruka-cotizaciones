@@ -12,6 +12,14 @@ export function hoyLocal(now = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(now);
 }
 
+export function normalizeInvoiceInput(invoiceNumber: unknown, invoicedAt: unknown, invoicedAmount: unknown) {
+  const number = String(invoiceNumber || "").trim();
+  const date = String(invoicedAt || "").trim();
+  const amount = Number(invoicedAmount);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isSafeInteger(amount) || amount <= 0) return null;
+  return { invoiceNumber: number || undefined, invoicedAt: date, invoicedAmount: amount };
+}
+
 export function nextQuoteNumber(quotes: readonly Pick<Quote, "number">[], now = new Date()) {
   const year = hoyLocal(now).slice(0, 4);
   const pattern = new RegExp(`^COT-${year}-(\\d+)$`);

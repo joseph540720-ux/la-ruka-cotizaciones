@@ -1,9 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { hoyLocal, lineSubtotal, needsWeeklyFollowUp, nextQuoteNumber, normalizeQuote, quoteTotals, type Quote, type QuoteItem } from "./quote.ts";
+import { hoyLocal, lineSubtotal, needsWeeklyFollowUp, nextQuoteNumber, normalizeInvoiceInput, normalizeQuote, quoteTotals, type Quote, type QuoteItem } from "./quote.ts";
 
 test("guarda la fecha de Chile aunque UTC ya esté en el día siguiente", () => {
   assert.equal(hoyLocal(new Date("2026-08-16T03:30:00.000Z")), "2026-08-15");
+});
+
+test("valida una factura y permite dejar su número pendiente", () => {
+  assert.deepEqual(normalizeInvoiceInput("", "2026-08-16", "125000"), {
+    invoiceNumber: undefined,
+    invoicedAt: "2026-08-16",
+    invoicedAmount: 125_000,
+  });
+  assert.deepEqual(normalizeInvoiceInput("  F-42  ", "2026-08-16", 125_000), {
+    invoiceNumber: "F-42",
+    invoicedAt: "2026-08-16",
+    invoicedAmount: 125_000,
+  });
+});
+
+test("rechaza facturas sin fecha o con un monto inválido", () => {
+  assert.equal(normalizeInvoiceInput("F-42", "", 125_000), null);
+  assert.equal(normalizeInvoiceInput("F-42", "2026-08-16", 0), null);
+  assert.equal(normalizeInvoiceInput("F-42", "2026-08-16", 12.5), null);
 });
 
 test("genera un correlativo anual que no existe", () => {
