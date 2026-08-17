@@ -465,3 +465,97 @@ tbody tr:hover{background:#fffcf9}
 .customer-contact{display:block;grid-column:2/4;padding-top:2px}
 .customer-contact span,.customer-contact small{overflow-wrap:anywhere}
 }
+
+/* Detalle de cotización: flujo de trabajo */
+.quote-detail{max-width:1240px;margin:0 auto}
+.quote-detail>.back-link{margin:-6px 0 12px -8px}
+.quote-detail-hero{display:flex;align-items:center;justify-content:space-between;gap:28px;border:1px solid #ecd9cb;border-radius:17px;padding:24px 26px;background:linear-gradient(120deg,#fff 45%,#fff4eb)}
+.quote-detail-eyebrow{display:block;color:var(--orange-dark);font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:7px}
+.quote-detail-hero h2{font-size:27px;letter-spacing:-.5px;margin:0}
+.quote-detail-hero p{color:var(--muted);font-size:13px;margin:7px 0 0}
+.quote-detail-total{min-width:220px;border-left:1px solid #ead9cb;padding-left:28px;text-align:right}
+.quote-detail-total small,.quote-detail-total strong,.quote-detail-total span{display:block}
+.quote-detail-total small{color:var(--muted);font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.7px}
+.quote-detail-total strong{color:var(--orange-dark);font-size:26px;margin:5px 0 3px}
+.quote-detail-total span{color:var(--muted);font-size:11px}
+.quote-progress{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0;margin:14px 0 22px}
+.quote-progress-step{display:flex;align-items:center;gap:11px;min-width:0;border:1px solid var(--line);border-radius:12px;background:#faf8f5;padding:11px 13px;color:#766f68}
+.quote-progress-step.active{border-color:#dc895d;background:#fff7f1;box-shadow:inset 0 0 0 1px #f3d4c3;color:var(--ink)}
+.quote-progress-step.complete{border-color:#badbcd;background:#f0f8f4;color:var(--ink)}
+.quote-progress-number{width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;background:#eae5df;color:#6e665f;font-size:12px;font-weight:800}
+.quote-progress-step.active .quote-progress-number{background:var(--orange);color:#fff}
+.quote-progress-step.complete .quote-progress-number{background:var(--green);color:#fff}
+.quote-progress-step>span:last-child{min-width:0}
+.quote-progress-step small,.quote-progress-step strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quote-progress-step small{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px}
+.quote-progress-step strong{font-size:12px}
+.detail-feedback{margin:-8px 0 18px;font-size:12px}
+.quote-detail-workspace{display:grid;grid-template-columns:minmax(0,1fr) 280px;grid-template-areas:"flow sidebar";align-items:start;gap:20px}
+.quote-detail-flow{grid-area:flow;display:flex;flex-direction:column;gap:14px;min-width:0}
+.quote-detail-sidebar{grid-area:sidebar;display:flex;flex-direction:column;gap:14px;position:sticky;top:18px}
+.quote-flow-card,.quote-content-card,.detail-side-card{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+.quote-flow-card.current{border-color:#dc895d;box-shadow:0 6px 22px rgba(139,70,31,.09)}
+.quote-flow-head{display:flex;align-items:center;gap:13px;padding:17px 18px}
+.quote-flow-card.current .quote-flow-head{background:#fff9f5}
+.quote-flow-head>div{flex:1;min-width:0}
+.quote-flow-number{width:32px;height:32px;flex:none;border-radius:50%;display:grid;place-items:center;background:#f0ebe6;color:#665f59;font-size:12px;font-weight:800}
+.quote-flow-card.current .quote-flow-number{background:var(--orange);color:#fff}
+.quote-flow-head h3{font-size:15px;margin:0}
+.quote-flow-head p{color:var(--muted);font-size:11px;line-height:1.45;margin:4px 0 0}
+.quote-flow-head>.badge,.quote-flow-head>.delivery-badge{flex:none}
+.quote-flow-head>button{flex:none;min-height:42px;padding:0 14px;font-size:11px}
+.quote-flow-body,.quote-flow-card>.status-choice{border-top:1px solid var(--line);padding:16px 18px}
+.delivery-state-row{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:11px;line-height:1.5}
+.delivery-file-actions{display:flex;gap:9px;margin-top:14px}
+.delivery-file-actions .secondary{min-height:42px;font-size:11px;padding:0 14px}
+.quote-flow-body .email-options{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:14px}
+.flow-marketplace{border-top:1px dashed #ded3c9;margin-top:16px;padding-top:16px;justify-content:flex-end}
+.flow-marketplace label{width:min(100%,270px)}
+.status-choice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.status-choice .primary,.status-choice .secondary,.status-choice .danger-button{min-height:44px;padding:0 12px;font-size:11px}
+.invoice-flow-body{padding-top:14px}
+.invoice-flow-body .invoice-summary,.invoice-flow-body .invoice-pending-note{margin-bottom:0}
+.invoice-flow-body .invoice-form{grid-template-columns:repeat(2,minmax(0,1fr));margin:14px 0 0}
+.invoice-flow-body .invoice-form>div:first-child{grid-column:1/-1}
+.quote-content-card{padding:20px 18px}
+.quote-content-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:10px}
+.quote-content-head h3{font-size:16px;margin:0}
+.quote-content-head p{color:var(--muted);font-size:11px;margin:4px 0 0}
+.quote-content-head>span{flex:none;border-radius:20px;background:#f1ece7;color:var(--muted);padding:6px 9px;font-size:10px;font-weight:750}
+.quote-content-card .detail-totals{margin-top:18px}
+.detail-side-card{padding:17px}
+.detail-side-card h3{font-size:14px;margin:0 0 12px}
+.customer-side-card small,.customer-side-card strong,.customer-side-card span{display:block}
+.customer-side-card small{color:var(--orange-dark);font-size:9px;font-weight:800;letter-spacing:1px;margin-bottom:8px}
+.customer-side-card strong{font-size:15px;line-height:1.35;margin-bottom:8px}
+.customer-side-card span{color:var(--muted);font-size:11px;line-height:1.5;overflow-wrap:anywhere;margin-top:3px}
+.detail-side-card .full{justify-content:center}
+.detail-side-card .danger-text{margin-top:8px}
+
+@media(max-width:980px){
+.quote-detail-workspace{grid-template-columns:1fr;grid-template-areas:"sidebar" "flow"}
+.quote-detail-sidebar{position:static;display:grid;grid-template-columns:1fr 1fr}
+}
+
+@media(max-width:760px){
+.quote-detail-hero{align-items:stretch;flex-direction:column;gap:18px;padding:19px}
+.quote-detail-hero h2{font-size:23px}
+.quote-detail-total{min-width:0;border-left:0;border-top:1px solid #ead9cb;padding:15px 0 0;text-align:left}
+.quote-detail-total strong{font-size:23px}
+.quote-progress{grid-template-columns:1fr;gap:7px}
+.quote-progress-step{padding:10px 12px}
+.quote-detail-sidebar{grid-template-columns:1fr}
+.quote-flow-head{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;padding:15px}
+.quote-flow-head>.badge,.quote-flow-head>.delivery-badge,.quote-flow-head>button{grid-column:2;justify-self:start}
+.quote-flow-head>button{width:100%;margin-top:3px}
+.quote-flow-body,.quote-flow-card>.status-choice{padding:14px}
+.delivery-file-actions,.marketplace-form{flex-direction:column}
+.delivery-file-actions>*{width:100%}
+.quote-flow-body .email-options{grid-template-columns:1fr}
+.flow-marketplace label{width:100%}
+.status-choice{grid-template-columns:1fr}
+.invoice-flow-body .invoice-form{grid-template-columns:1fr}
+.invoice-flow-body .invoice-form>div:first-child{grid-column:auto}
+.quote-content-card{padding:16px 14px}
+.quote-content-head{align-items:flex-start}
+}

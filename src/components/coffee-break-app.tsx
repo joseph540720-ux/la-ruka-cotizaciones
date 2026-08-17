@@ -473,6 +473,11 @@ function Quotes({ business, quotes, selectedQuoteId, onNew, onBack, onDuplicate,
   };
   if (selected) {
     const totals = quoteTotals(selected.items);
+    const delivered = selected.deliveryStatus !== "borrador";
+    const answered = selected.status !== "Pendiente";
+    const invoiced = Boolean(selected.invoicedAmount);
+    const currentStep = !delivered ? 1 : !answered ? 2 : selected.status === "Aceptada" && !invoiced ? 3 : 0;
+    const progressClass = (step: number, complete: boolean) => `quote-progress-step${complete ? " complete" : currentStep === step ? " active" : ""}`;
     const setStatus = (status: QuoteStatus) => { const updated = withQuoteStatus(selected, status); onUpdate(updated); setDetailError(""); setDetailMessage(`Estado actualizado a ${status}.`); };
     const saveInvoice = async (data: FormData) => {
       const invoice = normalizeInvoiceInput(data.get("invoiceNumber"), data.get("invoicedAt"), data.get("invoicedAmount"));
@@ -486,14 +491,113 @@ function Quotes({ business, quotes, selectedQuoteId, onNew, onBack, onDuplicate,
     };
     return <section className="panel quote-detail">
       <button className="back-link" onClick={onBack}>← Volver al historial</button>
-      <div className="section-head detail-head"><div><h2>{selected.number}</h2><p>{formatDate(selected.date)} · {selected.customer.name}</p></div><div className="detail-status"><DeliveryBadge status={selected.deliveryStatus}/><Badge status={selected.status}/><button className="danger-text" onClick={() => setConfirmDelete(true)}><Icon name="trash"/> Borrar</button></div></div>
-      <div className="status-controls"><div><strong>Situación de la cotización</strong><span>Actualízala cuando el cliente responda.</span></div><button className={selected.status === "Pendiente" ? "primary" : "secondary"} onClick={() => setStatus("Pendiente")}>Pendiente</button><button className={selected.status === "Aceptada" ? "primary" : "secondary"} onClick={() => setStatus("Aceptada")}>Aceptada</button><button className={selected.status === "Rechazada" ? "danger-button" : "secondary"} onClick={() => setStatus("Rechazada")}>Rechazada</button></div>
-      <div className="detail-grid"><div><small>CLIENTE</small><strong>{selected.customer.name}</strong><span>{selected.customer.rut}</span><span>{selected.customer.contact}</span><span>{selected.customer.email}</span></div><div className="detail-actions"><button className="secondary" onClick={() => downloadQuotePdf(selected, business)}><Icon name="download"/> Descargar PDF</button><button className="secondary" onClick={() => void shareQuotePdf(selected, business)}><Icon name="share"/> Compartir por WhatsApp</button><button className="secondary" onClick={() => onEdit(selected)}><Icon name="edit"/> Editar cotización</button><button className="secondary" onClick={() => setBilling(!billing)}><Icon name="file"/> {selected.invoicedAmount ? "Editar factura" : "Registrar factura"}</button><button className="primary" onClick={() => onDuplicate(selected)}><Icon name="plus"/> Duplicar cotización</button></div></div>
-      <section className="delivery-panel"><div className="delivery-summary"><div><small>ENTREGA</small><strong>{deliveryLabels[selected.deliveryStatus]}</strong><span>{selected.deliveryStatus === "borrador" ? "Todavía no se entregó al cliente ni se confirmó en Mercado Público." : `Registrada el ${deliveryDate(selected.deliveryUpdatedAt)}`}</span>{selected.idAdquisicion && <span>ID de adquisición: {selected.idAdquisicion}</span>}{selected.ownerCopySentAt && <span>Copia enviada a tu correo el {deliveryDate(selected.ownerCopySentAt)}</span>}</div>{(selected.customer.compraPorMercadoPublico || selected.deliveryStatus === "subida_mercado_publico") && <form className="marketplace-form" action={saveMarketplaceDelivery}><label>ID de Mercado Público (opcional)<input name="idAdquisicion" defaultValue={selected.idAdquisicion}/></label><button className="secondary" disabled={deliverySaving}>{deliverySaving ? "Guardando…" : "Confirmar subida a Mercado Público"}</button></form>}</div>{detailError && <div className="send-error">{detailError}</div>}{detailMessage && <div className="send-success">{detailMessage}</div>}<QuoteEmailActions key={selected.id} business={business} customer={selected.customer} busyTarget={detailBusyTarget} onSend={(target, recipient) => void sendFromDetail(target, recipient)}/></section>
-      {billing && <form className="invoice-form" action={saveInvoice}><div><h3>Registrar facturación</h3><p>Puede ser el total completo o un monto parcial.</p></div><label>Número de factura (opcional)<input name="invoiceNumber" defaultValue={selected.invoiceNumber}/></label><label>Fecha<input name="invoicedAt" type="date" required defaultValue={selected.invoicedAt || hoyLocal()}/></label><label>Monto facturado<input name="invoicedAmount" type="number" inputMode="numeric" min="1" step="1" required defaultValue={selected.invoicedAmount || totals.total}/></label><button className="primary" type="submit" disabled={invoiceSaving}>{invoiceSaving ? "Guardando…" : "Guardar factura"}</button></form>}
-      {selected.invoicedAmount ? <div className="invoice-summary"><span className="stat-icon green"><Icon name="check"/></span><div><small>FACTURADA {selected.invoicedAt ? `EL ${formatDate(selected.invoicedAt)}` : ""}</small><strong>{formatCLP(selected.invoicedAmount)}</strong><span>{selected.invoiceNumber || "Sin número de factura"}</span></div></div> : <div className="invoice-pending-note">Esta cotización todavía no registra facturación.</div>}
-      <table className="doc-table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>{selected.items.map((item) => <tr key={item.productId}><td>{item.name}</td><td>{item.quantity}</td><td>{formatCLP(item.unitPrice)}</td><td>{formatCLP(lineSubtotal(item))}</td></tr>)}</tbody></table>
-      <div className="detail-totals"><span>Neto <b>{formatCLP(totals.net)}</b></span><span>IVA 19% <b>{formatCLP(totals.tax)}</b></span><span>Total <b>{formatCLP(totals.total)}</b></span></div>{selected.notes && <div className="detail-notes"><small>OBSERVACIONES</small><p>{selected.notes}</p></div>}
+      <header className="quote-detail-hero">
+        <div>
+          <span className="quote-detail-eyebrow">Cotización</span>
+          <h2>{selected.number}</h2>
+          <p>{formatDate(selected.date)} · {selected.customer.name}</p>
+        </div>
+        <div className="quote-detail-total">
+          <small>Total cotizado</small>
+          <strong>{formatCLP(totals.total)}</strong>
+          <span>{selected.items.length} {selected.items.length === 1 ? "ítem" : "ítems"}</span>
+        </div>
+      </header>
+
+      <ol className="quote-progress" aria-label="Progreso de la cotización">
+        <li className={progressClass(1, delivered)}>
+          <span className="quote-progress-number">{delivered ? <Icon name="check" size={17}/> : "1"}</span>
+          <span><small>Entrega</small><strong>{deliveryLabels[selected.deliveryStatus]}</strong></span>
+        </li>
+        <li className={progressClass(2, answered)}>
+          <span className="quote-progress-number">{answered ? <Icon name="check" size={17}/> : "2"}</span>
+          <span><small>Respuesta</small><strong>{selected.status}</strong></span>
+        </li>
+        <li className={progressClass(3, invoiced)}>
+          <span className="quote-progress-number">{invoiced ? <Icon name="check" size={17}/> : "3"}</span>
+          <span><small>Facturación</small><strong>{invoiced ? "Registrada" : selected.status === "Rechazada" ? "No corresponde" : "Pendiente"}</strong></span>
+        </li>
+      </ol>
+
+      {detailError && <div className="send-error detail-feedback" role="alert">{detailError}</div>}
+      {detailMessage && <div className="send-success detail-feedback" role="status">{detailMessage}</div>}
+
+      <div className="quote-detail-workspace">
+        <div className="quote-detail-flow">
+          <section className={`quote-flow-card${currentStep === 1 ? " current" : ""}`} aria-labelledby="delivery-step-title">
+            <div className="quote-flow-head">
+              <span className="quote-flow-number">1</span>
+              <div><h3 id="delivery-step-title">Entregar la cotización</h3><p>Envía el PDF, compártelo o registra su subida a Mercado Público.</p></div>
+              <DeliveryBadge status={selected.deliveryStatus}/>
+            </div>
+            <div className="quote-flow-body">
+              <div className="delivery-state-row">
+                <span>{selected.deliveryStatus === "borrador" ? "Aún no se registra una entrega." : `Entrega registrada el ${deliveryDate(selected.deliveryUpdatedAt)}.`}</span>
+                {selected.idAdquisicion && <span>ID de adquisición: <strong>{selected.idAdquisicion}</strong></span>}
+                {selected.ownerCopySentAt && <span>Copia enviada a tu correo el {deliveryDate(selected.ownerCopySentAt)}.</span>}
+              </div>
+              <div className="delivery-file-actions">
+                <button className="secondary" onClick={() => downloadQuotePdf(selected, business)}><Icon name="download"/> Descargar PDF</button>
+                <button className="secondary" onClick={() => void shareQuotePdf(selected, business)}><Icon name="share"/> Compartir por WhatsApp</button>
+              </div>
+              <QuoteEmailActions key={selected.id} business={business} customer={selected.customer} busyTarget={detailBusyTarget} onSend={(target, recipient) => void sendFromDetail(target, recipient)}/>
+              {(selected.customer.compraPorMercadoPublico || selected.deliveryStatus === "subida_mercado_publico") && <form className="marketplace-form flow-marketplace" action={saveMarketplaceDelivery}>
+                <label>ID de Mercado Público (opcional)<input name="idAdquisicion" defaultValue={selected.idAdquisicion}/></label>
+                <button className="secondary" disabled={deliverySaving}>{deliverySaving ? "Guardando…" : "Confirmar subida a Mercado Público"}</button>
+              </form>}
+            </div>
+          </section>
+
+          <section className={`quote-flow-card${currentStep === 2 ? " current" : ""}`} aria-labelledby="response-step-title">
+            <div className="quote-flow-head">
+              <span className="quote-flow-number">2</span>
+              <div><h3 id="response-step-title">Registrar la respuesta</h3><p>Actualiza la situación cuando el cliente o Mercado Público responda.</p></div>
+              <Badge status={selected.status}/>
+            </div>
+            <div className="status-choice" role="group" aria-label="Situación de la cotización">
+              <button className={selected.status === "Pendiente" ? "primary" : "secondary"} onClick={() => setStatus("Pendiente")}>Pendiente</button>
+              <button className={selected.status === "Aceptada" ? "primary" : "secondary"} onClick={() => setStatus("Aceptada")}>Aceptada</button>
+              <button className={selected.status === "Rechazada" ? "danger-button" : "secondary"} onClick={() => setStatus("Rechazada")}>Rechazada</button>
+            </div>
+          </section>
+
+          <section className={`quote-flow-card${currentStep === 3 ? " current" : ""}`} aria-labelledby="invoice-step-title">
+            <div className="quote-flow-head">
+              <span className="quote-flow-number">3</span>
+              <div><h3 id="invoice-step-title">Registrar la facturación</h3><p>Guarda el monto completo o una facturación parcial.</p></div>
+              {selected.status !== "Rechazada" && <button className={invoiced ? "secondary" : "primary"} onClick={() => setBilling(!billing)}><Icon name="file"/> {invoiced ? "Editar factura" : "Registrar factura"}</button>}
+            </div>
+            <div className="quote-flow-body invoice-flow-body">
+              {invoiced ? <div className="invoice-summary"><span className="stat-icon green"><Icon name="check"/></span><div><small>FACTURADA {selected.invoicedAt ? `EL ${formatDate(selected.invoicedAt)}` : ""}</small><strong>{formatCLP(selected.invoicedAmount || 0)}</strong><span>{selected.invoiceNumber || "Sin número de factura"}</span></div></div> : <div className="invoice-pending-note">{selected.status === "Rechazada" ? "Esta cotización fue rechazada y no corresponde facturarla. Si la situación cambia, márcala como aceptada." : "Todavía no se ha registrado una factura para esta cotización."}</div>}
+              {billing && selected.status !== "Rechazada" && <form className="invoice-form" action={saveInvoice}><div><h3>Datos de la factura</h3><p>El número puede quedar pendiente.</p></div><label>Número de factura (opcional)<input name="invoiceNumber" defaultValue={selected.invoiceNumber}/></label><label>Fecha<input name="invoicedAt" type="date" required defaultValue={selected.invoicedAt || hoyLocal()}/></label><label>Monto facturado<input name="invoicedAmount" type="number" inputMode="numeric" min="1" step="1" required defaultValue={selected.invoicedAmount || totals.total}/></label><button className="primary" type="submit" disabled={invoiceSaving}>{invoiceSaving ? "Guardando…" : "Guardar factura"}</button></form>}
+            </div>
+          </section>
+
+          <section className="quote-content-card" aria-labelledby="quote-content-title">
+            <div className="quote-content-head"><div><h3 id="quote-content-title">Productos y totales</h3><p>Detalle incluido en la cotización.</p></div><span>{selected.items.length} {selected.items.length === 1 ? "ítem" : "ítems"}</span></div>
+            <table className="doc-table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>{selected.items.map((item) => <tr key={item.productId}><td>{item.name}</td><td>{item.quantity}</td><td>{formatCLP(item.unitPrice)}</td><td>{formatCLP(lineSubtotal(item))}</td></tr>)}</tbody></table>
+            <div className="detail-totals"><span>Neto <b>{formatCLP(totals.net)}</b></span><span>IVA 19% <b>{formatCLP(totals.tax)}</b></span><span>Total <b>{formatCLP(totals.total)}</b></span></div>
+            {selected.notes && <div className="detail-notes"><small>OBSERVACIONES</small><p>{selected.notes}</p></div>}
+          </section>
+        </div>
+
+        <aside className="quote-detail-sidebar" aria-label="Cliente y acciones de la cotización">
+          <section className="detail-side-card customer-side-card">
+            <small>CLIENTE</small>
+            <strong>{selected.customer.name}</strong>
+            {selected.customer.rut && <span>{selected.customer.rut}</span>}
+            {selected.customer.contact && <span>{selected.customer.contact}</span>}
+            {selected.customer.email && <span>{selected.customer.email}</span>}
+            {selected.customer.phone && <span>{selected.customer.phone}</span>}
+          </section>
+          <section className="detail-side-card">
+            <h3>Otras acciones</h3>
+            <button className="secondary full" onClick={() => onEdit(selected)}><Icon name="edit"/> Editar cotización</button>
+            <button className="secondary full" onClick={() => onDuplicate(selected)}><Icon name="plus"/> Duplicar cotización</button>
+            <button className="danger-text full" onClick={() => setConfirmDelete(true)}><Icon name="trash"/> Borrar cotización</button>
+          </section>
+        </aside>
+      </div>
       {confirmDelete && <div className="modal-scrim" role="presentation" onMouseDown={() => setConfirmDelete(false)}><div className="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-title" onMouseDown={(event) => event.stopPropagation()}><span className="delete-icon"><Icon name="trash" size={27}/></span><h3 id="delete-title">¿Borrar esta cotización?</h3><p>Se eliminará <strong>{selected.number}</strong> de {selected.customer.name}. Esta acción no se puede deshacer.</p><div className="confirm-actions"><button className="secondary" onClick={() => setConfirmDelete(false)}>No, mantenerla</button><button className="danger-button" onClick={() => { onDelete(selected); setConfirmDelete(false); onBack(); }}>Sí, borrar cotización</button></div></div></div>}
     </section>;
   }
