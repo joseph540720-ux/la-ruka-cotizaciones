@@ -354,7 +354,7 @@ export function CoffeeBreakApp() {
   };
   const wizardSource = route.quoteId ? quotes.find((quote) => quote.id === route.quoteId) || null : null;
   const wizardMode = route.wizardMode || "create";
-  const titles: Record<View, string> = { home: "Buenos días", quotes: route.quoteId ? "Detalle de cotización" : "Cotizaciones", products: "Productos", customers: "Clientes", settings: "Mi negocio", "new-quote": wizardMode === "edit" ? "Editar cotización" : wizardMode === "duplicate" ? "Duplicar cotización" : "Nueva cotización" };
+  const titles: Record<View, string> = { home: "", quotes: route.quoteId ? "Detalle de cotización" : "Cotizaciones", products: "Productos", customers: "Clientes", settings: "Mi negocio", "new-quote": wizardMode === "edit" ? "Editar cotización" : wizardMode === "duplicate" ? "Duplicar cotización" : "Nueva cotización" };
   const syncLabel = !isCloudConfigured ? "Modo local" : syncStatus === "guardando" ? "Guardando cambios…" : syncStatus === "guardado" ? "Datos sincronizados" : "Error de sincronización";
 
   if (!storageReady) return <main className="auth-page"><div className="auth-card"><Image className="auth-logo-image" src="/la-ruka-logo.png" alt="Logo de La Ruka" width={92} height={92} priority/><h1>La Ruka</h1><p>Cargando tus cotizaciones guardadas…</p></div></main>;
@@ -375,10 +375,10 @@ export function CoffeeBreakApp() {
     </aside>
     {mobileNav && <button className="nav-scrim" aria-label="Cerrar menú" onClick={() => setMobileNav(false)}/>} 
     <main className="main">
-      <header className="topbar">
+      <header className={`topbar${view === "home" ? " home-topbar" : ""}`}>
         <button className="menu-button" onClick={() => setMobileNav(true)} aria-label="Abrir menú">☰</button>
-        <div><h1>{titles[view]}</h1>{view === "home" && <p>Todo listo para una nueva jornada.</p>}</div>
-        {view !== "new-quote" && <Link className="primary compact" href="/cotizaciones/nueva"><Icon name="plus"/> Crear cotización</Link>}
+        {view !== "home" && <div><h1>{titles[view]}</h1></div>}
+        {view !== "home" && view !== "new-quote" && <Link className="primary compact" href="/cotizaciones/nueva"><Icon name="plus"/> Crear cotización</Link>}
       </header>
       <div className="content">
         {syncStatus === "error" && <div className="sync-notice sync-notice-error" role="alert"><div><strong>No se guardaron los últimos cambios</strong><span>{syncError}</span></div></div>}
@@ -422,7 +422,7 @@ function Dashboard({ quotes, onNew, onQuotes, onUpdate }: { quotes: Quote[]; onN
   const followUpDone = (quote: Quote) => onUpdate({ ...quote, lastFollowUpAt: hoyLocal() });
   return <>
     <section className="hero-card">
-      <div><span className="eyebrow">La forma más simple de cotizar</span><h2>¿Creamos una cotización?</h2><p>Elige un cliente, agrega productos y nosotros hacemos el resto.</p><button className="primary hero-button" onClick={onNew}><Icon name="plus" size={23}/> Crear nueva cotización <Icon name="arrow"/></button></div>
+      <div><h2>¿Creamos una cotización?</h2><p>Elige un cliente, agrega productos y nosotros hacemos el resto.</p><button className="primary hero-button" onClick={onNew}><Icon name="plus" size={23}/> Crear nueva cotización <Icon name="arrow"/></button></div>
       <div className="hero-art" aria-hidden="true"><span className="steam s1"/><span className="steam s2"/><div className="cup"><Icon name="coffee" size={76}/></div><span className="bean b1">●</span><span className="bean b2">●</span></div>
     </section>
     <section className="stats">
